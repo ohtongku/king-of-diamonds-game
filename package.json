@@ -1,17 +1,15 @@
-ls{
+{
   "name": "square_k",
   "version": "1.0.0",
-  "description": "",
+  "description": "A multiplayer version of the King of Diamonds game.",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "express": "^5.1.0",
-    "socket.io": "^4.8.1"
-  }
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  },
+  "author": "",
+  "license": "ISC"
 }
