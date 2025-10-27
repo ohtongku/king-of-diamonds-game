@@ -4,177 +4,151 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>♦️K - 美人投票 (多人連線版)</title>
-    <!-- CSS 樣式與上一版完全相同，為了簡潔省略 -->
-    <!-- 如果您不確定，可以直接複製上一回答的完整 style 標籤 -->
-    <style>:root{--primary-bg:#121212;--secondary-bg:#1e1e1e;--border-color:#444;--text-color:#e0e0e0;--accent-color:#e60000;--host-color:#ffd700}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:var(--primary-bg);color:var(--text-color);margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:1em;box-sizing:border-box}#game-wrapper{width:100%;max-width:900px;background-color:var(--secondary-bg);border:2px solid var(--border-color);border-radius:15px;padding:2em;text-align:center}.screen{display:none}.screen.active{display:block}button{background-color:var(--accent-color);color:#fff;border:none;padding:10px 20px;border-radius:5px;font-size:1.2em;cursor:pointer;transition:background-color .2s}button:hover{background-color:#c40000}button:disabled{background-color:#555;cursor:not-allowed}#lobby-players{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;margin:20px 0}.player-card{background-color:var(--primary-bg);padding:15px;border-radius:8px;border:1px solid var(--border-color)}.player-card.is-host .player-name::after{content:'👑';margin-left:8px;color:var(--host-color)}.player-card.is-eliminated{opacity:.5;text-decoration:line-through}.player-score{font-size:1.5em;font-weight:700}#start-game-btn{margin-top:20px}#timer{font-size:2.5em;color:var(--accent-color);font-weight:700;margin-bottom:20px}#number-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;max-width:600px;margin:0 auto}.number-btn{background-color:#333;padding:8px;font-size:1em;border-radius:4px}.number-btn.selected{background-color:var(--host-color);color:#111}.number-btn:disabled{background-color:#222}#results-list,#scoreboard-list{list-style:none;padding:0;max-width:500px;margin:20px auto}#results-list li,#scoreboard-list li{background-color:var(--primary-bg);margin-bottom:10px;padding:15px;border-radius:5px;display:flex;justify-content:space-between;font-size:1.2em}#notification-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);display:flex;justify-content:center;align-items:center;font-size:3em;color:#fff;z-index:100;opacity:0;pointer-events:none;transition:opacity .5s}#notification-overlay.visible{opacity:1}</style>
+    <style>
+        :root{--primary-bg:#121212;--secondary-bg:#1e1e1e;--border-color:#444;--text-color:#e0e0e0;--accent-color:#e60000;--host-color:#ffd700}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:var(--primary-bg);color:var(--text-color);margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:1em;box-sizing:border-box}
+        #game-wrapper{position:relative;width:100%;max-width:900px;background-color:var(--secondary-bg);border:2px solid var(--border-color);border-radius:15px;padding:2em;text-align:center}
+        .screen{display:none}.screen.active{display:block}
+        button{background-color:var(--accent-color);color:#fff;border:none;padding:10px 20px;border-radius:5px;font-size:1.2em;cursor:pointer;transition:background-color .2s}
+        button:hover:not(:disabled){background-color:#c40000} button:disabled{background-color:#555;cursor:not-allowed}
+        #lobby-players{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;margin:20px 0}
+        .player-card{background-color:var(--primary-bg);padding:15px;border-radius:8px;border:1px solid var(--border-color)}.player-card.is-host .player-name::after{content:'👑';margin-left:8px;color:var(--host-color)}.player-card.is-eliminated{opacity:.5;text-decoration:line-through}.player-score{font-size:1.5em;font-weight:700}
+        #timer{font-size:2.5em;color:var(--accent-color);font-weight:700;margin-bottom:20px}
+        #number-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;max-width:600px;margin:0 auto}.number-btn{background-color:#333;padding:8px;font-size:1em;border-radius:4px}.number-btn.selected{background-color:var(--host-color);color:#111}
+        #results-list,#scoreboard-list{list-style:none;padding:0;max-width:500px;margin:20px auto}#results-list li,#scoreboard-list li{background-color:var(--primary-bg);margin-bottom:10px;padding:15px;border-radius:5px;display:flex;justify-content:space-between;font-size:1.2em}
+        #notification-overlay,#new-rule-notification,#rules-modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);display:flex;justify-content:center;align-items:center;text-align:center;flex-direction:column;z-index:100;opacity:0;pointer-events:none;transition:opacity .5s}
+        #notification-overlay.visible,#new-rule-notification.visible,#rules-modal-overlay.visible{opacity:1;pointer-events:auto}
+        #new-rule-notification h2{color:var(--accent-color);font-size:2.5em;margin-bottom:1em}#new-rule-notification ul{list-style:none;padding:0;font-size:1.5em}
+        
+        /* ** 全新的規則模態視窗 CSS ** */
+        #rules-modal{background-color:var(--secondary-bg);padding:2em 3em;border-radius:15px;width:90%;max-width:600px;text-align:left;position:relative;border:1px solid var(--border-color)}
+        #rules-modal h2{text-align:center;margin-top:0;color:var(--accent-color)}
+        #rules-modal .rule-item h3{margin-bottom:.5em;color:var(--host-color)}#rules-modal .rule-item p{margin-top:0;color:#ccc;line-height:1.6}
+        #close-rules-btn{position:absolute;top:15px;right:20px;font-size:2em;background:0 0;padding:0;border:none;cursor:pointer;color:#888;line-height:1}
+        #show-rules-btn{position:absolute;top:20px;right:20px;background-color:#333;font-size:1em;padding:8px 15px}
+    </style>
 </head>
 <body>
 
     <div id="game-wrapper">
-        <!-- Lobby Screen -->
-        <div id="lobby-screen" class="screen active">
-            <h1 id="lobby-title">等待玩家加入...</h1>
-            <div id="lobby-players"></div>
-            <button id="start-game-btn" disabled>等待主持人開始遊戲</button>
-        </div>
+        <button id="show-rules-btn">規則手冊</button>
 
-        <!-- Game Screen -->
-        <div id="game-screen" class="screen">
-            <h2 id="round-title"></h2>
-            <div id="timer">03:00</div>
-            <p>請選擇一個數字 (0-100)</p>
-            <div id="number-grid"></div>
-        </div>
-        
-        <!-- ** 新增 ** Spectator Screen -->
-        <div id="spectator-screen" class="screen">
-            <h2>您已被淘汰</h2>
-            <p>請靜待遊戲結束，觀賞剩餘玩家的對決。</p>
-        </div>
-
-        <!-- Results Screen -->
-        <div id="results-screen" class="screen">
-            <h2>回合結果</h2>
-            <p>目標數字: <strong id="target-number"></strong></p>
-            <p>勝利者: <strong id="winner-name"></strong></p>
-            <ul id="results-list"></ul>
-            <div id="elimination-message"></div>
-            <button id="next-round-btn">查看計分板</button>
-        </div>
-
-        <!-- Scoreboard Screen -->
-        <div id="scoreboard-screen" class="screen">
-            <h2>計分板</h2>
-            <ul id="scoreboard-list"></ul>
-            <p>10秒後將自動開始下一輪...</p>
-        </div>
-
-        <!-- Game Over Screen -->
-        <div id="game-over-screen" class="screen">
-            <h2>遊戲結束</h2>
-            <p>最終勝利者是: <strong id="final-winner"></strong></p>
-        </div>
+        <div id="lobby-screen" class="screen active"> <h1 id="lobby-title">等待玩家加入...</h1> <div id="lobby-players"></div> <button id="start-game-btn" disabled>等待主持人開始遊戲</button> </div>
+        <div id="game-screen" class="screen"> <h2 id="round-title"></h2> <div id="timer">03:00</div> <div id="number-grid"></div> </div>
+        <div id="spectator-screen" class="screen"> <h2>您已被淘汰</h2> <p>請靜待遊戲結束。</p> </div>
+        <div id="results-screen" class="screen"> <h2>回合結果</h2> <p>目標數字: <strong id="target-number"></strong></p> <p>勝利者: <strong id="winner-name"></strong></p> <ul id="results-list"></ul> <div id="elimination-message"></div> <button id="next-round-btn">查看計分板</button> </div>
+        <div id="scoreboard-screen" class="screen"> <h2>計分板</h2> <ul id="scoreboard-list"></ul> <p>10秒後開始下一輪...</p> </div>
+        <div id="game-over-screen" class="screen"> <h2>遊戲結束</h2> <p>最終勝利者是: <strong id="final-winner"></strong></p> </div>
     </div>
 
-    <div id="notification-overlay"></div>
+    <!-- 各種全螢幕通知 -->
+    <div id="notification-overlay"><span></span></div>
+    <div id="new-rule-notification"> <h2>新規則已啟動</h2> <ul id="new-rule-list"></ul> </div>
+    
+    <!-- ** 全新的規則模態視窗 HTML ** -->
+    <div id="rules-modal-overlay">
+        <div id="rules-modal">
+            <button id="close-rules-btn">&times;</button>
+            <h2>遊戲規則</h2>
+            <div class="rule-item">
+                <h3>基礎規則</h3>
+                <p>所有玩家從 0-100 選擇一個數字。系統計算平均數 x 0.8 作為目標，最接近者獲勝，其餘玩家扣 1 分。分數達 -10 則淘汰。</p>
+            </div>
+            <div class="rule-item" data-rule="HIGH_NUMBER_GAMBIT">
+                <h3>特殊規則：高額豁免 (人數 > 2)</h3>
+                <p>若僅有一名玩家選擇 ≥75 的數字，該玩家本回合免疫扣分並 +0.5 分。若有多名玩家選擇 ≥75，則此規則對所有人都無效。</p>
+            </div>
+            <div class="rule-item" data-rule="TIE_INVALID">
+                <h3>追加規則一：同票無效 (人數 ≤ 4)</h3>
+                <p>若有兩名或以上玩家選擇相同數字，他們的選擇將被視為無效，無法獲勝。</p>
+            </div>
+            <div class="rule-item" data-rule="DOUBLE_PENALTY">
+                <h3>追加規則二：精準懲罰 (人數 ≤ 3)</h3>
+                <p>若勝利者選擇的數字恰好等於四捨五入後的目標數字，所有失敗者將被扣 2 分。</p>
+            </div>
+            <div class="rule-item" data-rule="ZERO_VS_HUNDRED">
+                <h3>追加規則三：終極對決 (人數 = 2)</h3>
+                <p>若兩名玩家分別選擇 0 和 100，則選擇 100 的玩家直接獲勝。</p>
+            </div>
+        </div>
+    </div>
     
     <script src="/socket.io/socket.io.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // --- 元素選擇 ---
         const socket = io();
-        const screens = {
-            lobby: document.getElementById('lobby-screen'),
-            game: document.getElementById('game-screen'),
-            spectator: document.getElementById('spectator-screen'), // ** 新增 **
-            results: document.getElementById('results-screen'),
-            scoreboard: document.getElementById('scoreboard-screen'),
-            gameOver: document.getElementById('game-over-screen'),
+        const screens = { lobby: document.getElementById('lobby-screen'), game: document.getElementById('game-screen'), spectator: document.getElementById('spectator-screen'), results: document.getElementById('results-screen'), scoreboard: document.getElementById('scoreboard-screen'), gameOver: document.getElementById('game-over-screen') };
+        const showRulesBtn = document.getElementById('show-rules-btn'), closeRulesBtn = document.getElementById('close-rules-btn'), rulesModalOverlay = document.getElementById('rules-modal-overlay');
+        const notificationOverlay = document.getElementById('notification-overlay'), notificationText = notificationOverlay.querySelector('span'), newRuleNotification = document.getElementById('new-rule-notification'), newRuleList = document.getElementById('new-rule-list');
+        
+        let roomCode = sessionStorage.getItem('gameRoomCode'), playerName = sessionStorage.getItem('playerName');
+        
+        // --- 規則說明映射 ---
+        const RULE_DESCRIPTIONS = {
+            'HIGH_NUMBER_GAMBIT': '特殊規則：高額豁免',
+            'TIE_INVALID': '追加規則一：同票無效',
+            'DOUBLE_PENALTY': '追加規則二：精準懲罰',
+            'ZERO_VS_HUNDRED': '追加規則三：終極對決'
         };
-        
-        // --- UI Elements --- (與上一版相同)
-        const lobbyTitle = document.getElementById('lobby-title');
-        const lobbyPlayers = document.getElementById('lobby-players');
-        const startGameBtn = document.getElementById('start-game-btn');
-        const roundTitle = document.getElementById('round-title');
-        const timerDisplay = document.getElementById('timer');
-        const numberGrid = document.getElementById('number-grid');
-        const targetNumber = document.getElementById('target-number');
-        const winnerName = document.getElementById('winner-name');
-        const resultsList = document.getElementById('results-list');
-        const eliminationMessage = document.getElementById('elimination-message');
-        const nextRoundBtn = document.getElementById('next-round-btn');
-        const scoreboardList = document.getElementById('scoreboard-list');
-        const finalWinner = document.getElementById('final-winner');
-        const notificationOverlay = document.getElementById('notification-overlay');
-        
-        let roomCode = sessionStorage.getItem('gameRoomCode');
-        let playerName = sessionStorage.getItem('playerName');
-        let gameState = {};
-        let roundTimerInterval;
 
+        // --- 初始化 & 加入房間 ---
         if (!roomCode || !playerName) {
             playerName = prompt("請輸入您的暱稱:") || `玩家${Math.floor(Math.random() * 1000)}`;
-            roomCode = prompt("請輸入房間代碼加入或創建房間:") || "default";
-            sessionStorage.setItem('playerName', playerName);
-            sessionStorage.setItem('gameRoomCode', roomCode);
+            roomCode = prompt("請輸入房間代碼:") || "default";
+            sessionStorage.setItem('playerName', playerName); sessionStorage.setItem('gameRoomCode', roomCode);
         }
-
         socket.emit('joinRoom', { roomCode, playerName });
         createNumberGrid();
         
-        // --- Socket Listeners --- (與上一版相同)
-        socket.on('updateGameState', (newState) => {
-            gameState = newState;
-            console.log("Game state updated:", gameState);
-            updateUI();
-        });
-        socket.on('startRound', ({ round, duration }) => {
-            roundTitle.textContent = `第 ${round} 回合`;
+        // --- Socket 事件監聽 ---
+        socket.on('updateGameState', (newState) => { updateUI(newState); });
+        socket.on('startRound', ({ round, duration, activeRules }) => {
+            newRuleNotification.classList.remove('visible');
+            document.getElementById('round-title').textContent = `第 ${round} 回合`;
+            updateActiveRulesUI(activeRules); // 更新規則UI
             startClientTimer(duration);
             resetNumberGrid();
         });
-        socket.on('showAllVoted', () => {
-            clearInterval(roundTimerInterval);
-            showNotification("所有玩家已投票", 5000);
+        socket.on('newRulesAdded', (addedRules) => {
+            newRuleList.innerHTML = '';
+            addedRules.forEach(code => newRuleList.innerHTML += `<li>${RULE_DESCRIPTIONS[code] || code}</li>`);
+            newRuleNotification.classList.add('visible');
         });
+        socket.on('showAllVoted', () => { showNotification("所有玩家已投票", 5000); });
 
-        // --- Event Handlers --- (與上一版相同)
-        startGameBtn.addEventListener('click', () => socket.emit('startGame', roomCode));
-        nextRoundBtn.addEventListener('click', () => socket.emit('nextRound', roomCode));
+        // --- UI 事件監聽 ---
+        showRulesBtn.addEventListener('click', () => rulesModalOverlay.classList.add('visible'));
+        closeRulesBtn.addEventListener('click', () => rulesModalOverlay.classList.remove('visible'));
+        document.getElementById('start-game-btn').addEventListener('click', () => socket.emit('startGame', roomCode));
+        document.getElementById('next-round-btn').addEventListener('click', () => socket.emit('nextRound', roomCode));
 
-        // --- UI Update Functions ---
-        function switchScreen(screenName) {
-            Object.values(screens).forEach(s => s.classList.remove('active'));
-            if (screens[screenName]) {
-                screens[screenName].classList.add('active');
-            }
-        }
-        
-        function updateUI() {
-            // ** 核心修正：根據玩家是否被淘汰來決定顯示哪個畫面 **
+        // --- UI 更新函數 ---
+        function updateUI(gameState) {
             const myPlayer = gameState.players ? gameState.players[socket.id] : null;
-
             switch(gameState.status) {
-                case 'LOBBY':
-                    renderLobby();
-                    switchScreen('lobby');
-                    break;
-                case 'PLAYING':
-                    // 如果我在遊戲中被淘汰了，就去觀戰畫面
-                    if (myPlayer && myPlayer.isEliminated) {
-                        switchScreen('spectator');
-                    } else { // 否則正常進入遊戲畫面
-                        switchScreen('game');
-                    }
-                    break;
-                case 'RESULTS':
-                    renderResults();
-                    switchScreen('results');
-                    break;
-                case 'SCOREBOARD':
-                    renderScoreboard();
-                    switchScreen('scoreboard');
-                    break;
-                case 'GAME_OVER':
-                    renderGameOver();
-                    switchScreen('gameOver');
-                    break;
+                case 'LOBBY': switchScreen('lobby'); updateLobbyUI(gameState, roomCode); break;
+                case 'PLAYING': if(myPlayer && myPlayer.isEliminated) { switchScreen('spectator'); } else { switchScreen('game'); } break;
+                case 'RESULTS': switchScreen('results'); updateResultsUI(gameState); break;
+                case 'SCOREBOARD': switchScreen('scoreboard'); updateScoreboardUI(gameState); break;
+                case 'GAME_OVER': switchScreen('gameOver'); document.getElementById('final-winner').textContent = Object.values(gameState.players).find(p=>!p.isEliminated)?.name || '無'; break;
             }
         }
-        // ... 其他 render 函數 (renderLobby, renderPlayerList, etc.) 與上一版完全相同 ...
-        // 為了簡潔省略，若不確定可以直接複製上一版的完整 <script>
-        // 確保您擁有完整的 renderLobby, renderPlayerList, renderResults, renderScoreboard, renderGameOver, createNumberGrid, resetNumberGrid, startClientTimer, showNotification 函數
-
-        // 附上完整的 JS 函數以防萬一
-        function renderLobby(){lobbyTitle.textContent=`房間: ${roomCode} - 等待玩家...`;renderPlayerList(lobbyPlayers);if(socket.id===gameState.hostId){startGameBtn.textContent='開始遊戲';startGameBtn.disabled=Object.keys(gameState.players).length<2}else{startGameBtn.textContent='等待主持人開始遊戲';startGameBtn.disabled=!0}}
-        function renderPlayerList(e){e.innerHTML='';const t=Object.values(gameState.players).sort((e,t)=>t.score-e.score);t.forEach(t=>{const o=document.createElement('div');o.className='player-card',o.dataset.id=t.id,t.isEliminated&&o.classList.add('is-eliminated'),t.id===gameState.hostId&&o.classList.add('is-host'),o.innerHTML=`<div class="player-name">${t.name}</div><div class="player-score">${t.score}</div>`,e.appendChild(o)})}
-        function renderResults(){const e=gameState.lastRoundResult;targetNumber.textContent=e.target,winnerName.textContent=e.winnerName,resultsList.innerHTML='';e.choices.forEach(t=>{const o=document.createElement('li');o.innerHTML=`<span>${t.playerName}</span><strong>${t.choice}</strong>`,resultsList.appendChild(o)}),e.eliminatedPlayers&&e.eliminatedPlayers.length>0?eliminationMessage.innerHTML=`<p style="color:var(--accent-color);">本回合淘汰: ${e.eliminatedPlayers.join(', ')}</p>`:eliminationMessage.innerHTML='',nextRoundBtn.style.display=socket.id===gameState.hostId?'block':'none'}
-        function renderScoreboard(){renderPlayerList(scoreboardList)}
-        function renderGameOver(){const e=Object.values(gameState.players).find(e=>!e.isEliminated);finalWinner.textContent=e?e.name:'無'}
-        function createNumberGrid(){for(let e=0;e<=100;e++){const t=document.createElement('button');t.className='number-btn',t.textContent=e,t.dataset.number=e,t.addEventListener('click',()=>{t.disabled||(socket.emit('submitNumber',{roomCode:roomCode,number:e}),document.querySelectorAll('.number-btn').forEach(e=>e.disabled=!0),t.classList.add('selected'))}),numberGrid.appendChild(t)}}
-        function resetNumberGrid(){document.querySelectorAll('.number-btn').forEach(e=>{e.disabled=!1,e.classList.remove('selected')})}
-        function startClientTimer(e){let t=e;clearInterval(roundTimerInterval),roundTimerInterval=setInterval(()=>{t-=1e3;const e=Math.floor(t/1e3/60),o=Math.floor(t/1e3%60);timerDisplay.textContent=`${String(e).padStart(2,'0')}:${String(o).padStart(2,'0')}`,t<=0&&clearInterval(roundTimerInterval)},1e3)}
-        function showNotification(e,t){notificationOverlay.textContent=e,notificationOverlay.classList.add('visible'),setTimeout(()=>{notificationOverlay.classList.remove('visible')},t)}
+        function updateLobbyUI(gameState, roomCode){ /* ... 省略詳細實現 ... */ document.getElementById('lobby-title').textContent=`房間: ${roomCode}`;renderPlayerList(document.getElementById('lobby-players'),gameState.players,gameState.hostId);const startBtn=document.getElementById('start-game-btn');if(socket.id===gameState.hostId){startBtn.textContent='開始遊戲';startBtn.disabled=Object.keys(gameState.players).length<2}else{startBtn.textContent='等待主持人';startBtn.disabled=!0}}
+        function updateResultsUI(gameState){ /* ... 省略詳細實現 ... */ const res=gameState.lastRoundResult;document.getElementById('target-number').textContent=res.target;document.getElementById('winner-name').textContent=res.winnerName;const list=document.getElementById('results-list');list.innerHTML='';res.choices.forEach(c=>{list.innerHTML+=`<li><span>${c.playerName}</span><strong>${c.choice}</strong></li>`});document.getElementById('elimination-message').innerHTML=res.eliminatedPlayers.length>0?`<p style="color:var(--accent-color);">淘汰: ${res.eliminatedPlayers.join(', ')}</p>`:'';document.getElementById('next-round-btn').style.display=socket.id===gameState.hostId?'block':'none'}
+        function updateScoreboardUI(gameState){ renderPlayerList(document.getElementById('scoreboard-list'),gameState.players,gameState.hostId); }
+        function renderPlayerList(container, players, hostId){ container.innerHTML='';Object.values(players).sort((a,b)=>b.score-a.score).forEach(p=>{const c=document.createElement('div');c.className='player-card';p.id===hostId&&c.classList.add('is-host');p.isEliminated&&c.classList.add('is-eliminated');c.innerHTML=`<div class="player-name">${p.name}</div><div class="player-score">${p.score}</div>`;container.appendChild(c)}) }
+        function updateActiveRulesUI(activeRules) {
+            document.querySelectorAll('#rules-modal .rule-item').forEach(el => {
+                el.style.display = activeRules.includes(el.dataset.rule) ? 'block' : 'none';
+            });
+            document.querySelector('#rules-modal .rule-item:not([data-rule])').style.display = 'block'; // Always show basic rule
+        }
+        function showNotification(msg, dur){ notificationText.textContent = msg; notificationOverlay.classList.add('visible'); setTimeout(() => notificationOverlay.classList.remove('visible'), dur); }
+        function switchScreen(id){Object.values(screens).forEach(s=>s.classList.remove('active'));if(screens[id])screens[id].classList.add('active');}
+        let roundTimerInterval; function startClientTimer(d){let t=d;clearInterval(roundTimerInterval);roundTimerInterval=setInterval(()=>{t-=1e3;const m=Math.floor(t/6e4),s=Math.floor(t/1e3%60);document.getElementById('timer').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;if(t<=0)clearInterval(roundTimerInterval)},1e3)}
+        function createNumberGrid(){const g=document.getElementById('number-grid');for(let i=0;i<=100;i++){const b=document.createElement('button');b.className='number-btn';b.textContent=i;b.addEventListener('click',()=>{if(b.disabled)return;socket.emit('submitNumber',{roomCode,number:i});document.querySelectorAll('.number-btn').forEach(btn=>btn.disabled=true);b.classList.add('selected')});g.appendChild(b)}}
+        function resetNumberGrid(){document.querySelectorAll('.number-btn').forEach(b=>{b.disabled=false;b.classList.remove('selected')})}
     });
     </script>
 </body>
